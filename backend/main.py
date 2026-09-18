@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import httpx
@@ -44,6 +45,18 @@ app.add_middleware(
 
 
 # ── Config helpers ──────────────────────────────────
+_ENV_MAP = {
+    "gemini_api_key": "GEMINI_API_KEY",
+    "groq_api_key": "GROQ_API_KEY",
+    "openai_api_key": "OPENAI_API_KEY",
+    "openai_base_url": "OPENAI_BASE_URL",
+    "openrouter_api_key": "OPENROUTER_API_KEY",
+    "nine_router_api_key": "NINE_ROUTER_API_KEY",
+    "nine_router_base_url": "NINE_ROUTER_BASE_URL",
+    "rag_enabled": "RAG_ENABLED",
+}
+
+
 def _load_config() -> dict:
     cfg = dict(_DEFAULT_CONFIG)
     if CONFIG_FILE.exists():
@@ -51,6 +64,13 @@ def _load_config() -> dict:
             cfg.update({k: v for k, v in json.loads(CONFIG_FILE.read_text(encoding="utf-8")).items() if k in cfg})
         except Exception:
             pass
+    for key, env in _ENV_MAP.items():
+        val = os.environ.get(env)
+        if val is not None:
+            if isinstance(cfg[key], bool):
+                cfg[key] = val.lower() in ("1", "true", "yes", "on")
+            else:
+                cfg[key] = val
     return cfg
 
 
@@ -67,7 +87,10 @@ _sync_rag_key()
 
 
 def _save_config(cfg: dict):
-    CONFIG_FILE.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+    try:
+        CONFIG_FILE.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError:
+        pass
 
 
 def _configured_providers(cfg: dict) -> list[str]:
