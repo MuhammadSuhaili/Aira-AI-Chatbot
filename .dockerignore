@@ -1,0 +1,6 @@
+backend/config.json
+backend/rag_index.json
+backend/__pycache__/
+deploy/
+*.pyc
+.git
