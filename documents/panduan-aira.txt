@@ -1,0 +1,19 @@
+Aira Chatbot Panduan
+
+Aira adalah chatbot AI buatan lokal yang berjalan di laptop. Backendnya menggunakan Python dan FastAPI, modelnya dijalankan lewat Ollama atau API cloud.
+
+Cara menjalankan Aira:
+1. Buka folder Chatbot/backend.
+2. Jalankan perintah python main.py.
+3. Buka browser ke http://127.0.0.1:8000.
+
+Fitur utama:
+- Chat dengan model lokal (Ollama) atau model cloud (Groq, Gemini, OpenAI, OpenRouter).
+- Bisa membaca dokumen yang diletakkan di folder Chatbot/documents.
+- Kepribadian Aira bisa diubah lewat file backend/aira_prompt.txt.
+
+Untuk mendapatkan API key gratis:
+- Gemini: buka aistudio.google.com lalu buat API key.
+- Groq: buka console.groq.com lalu buat API key.
+
+Port default server adalah 8000.

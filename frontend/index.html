@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aira — AI Assistant</title>
+  <link rel="icon" type="image/svg+xml" href="assets/aira-mark.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-decoration" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <span class="logo-hat" aria-hidden="true">
+          <img src="assets/aira-mark.svg" alt="" />
+        </span>
+        <div class="brand-text">
+          <h1>Aira</h1>
+          <span class="status" id="status">menghubungkan…</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="settingsBtn" title="Pengaturan" aria-label="Pengaturan">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+        <div class="model-picker">
+          <span class="model-label">Model</span>
+          <div class="select-wrap">
+            <select id="model"></select>
+            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4 6 8 10 12 6"></polyline>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="chat" id="chat" aria-live="polite">
+      <div class="welcome" id="welcome">
+        <div class="welcome-avatar">
+          <img src="assets/aira-mark.svg" alt="Logo Aira" />
+        </div>
+        <h2>Aira</h2>
+        <p class="tagline">AI assistant, siap bantu kamu kapan pun.</p>
+        <div class="suggestions">
+          <button class="chip" data-q="Cara bikin website dari nol?">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h18"></path><path d="M9 21V9"></path></svg>
+            Bikin website
+          </button>
+          <button class="chip" data-q="Ajari aku Python dasar dong">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            Belajar Python
+          </button>
+          <button class="chip" data-q="Bantu tulis email formal">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            Tulis email
+          </button>
+          <button class="chip" data-q="Jelaskan apa itu API">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6"></path><path d="M8 6l-6 6 6 6"></path></svg>
+            Apa itu API
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="composer">
+      <div class="composer-inner">
+        <button class="clear-btn" id="clearBtn" title="Hapus percakapan" aria-label="Hapus percakapan">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        </button>
+        <textarea id="input" rows="1" placeholder="Tulis pesan…"></textarea>
+        <button class="send-btn" id="sendBtn" title="Kirim" aria-label="Kirim">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Pengaturan">
+      <div class="modal-head">
+        <h3>Pengaturan</h3>
+        <button class="modal-close" id="settingsClose" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <section class="modal-section">
+          <h4>API Cloud</h4>
+          <p class="hint">Opsional. Key gratis: Gemini → aistudio.google.com · Groq → console.groq.com.</p>
+          <div class="field">
+            <span>Gemini API Key</span>
+            <input type="password" id="inGeminiKey" placeholder="Belum di-set" autocomplete="off" />
+          </div>
+          <div class="field">
+            <span>Groq API Key</span>
+            <input type="password" id="inGroqKey" placeholder="Belum di-set" autocomplete="off" />
+          </div>
+          <div class="field">
+            <span>OpenAI API Key</span>
+            <input type="password" id="inOpenaiKey" placeholder="Belum di-set" autocomplete="off" />
+          </div>
+          <div class="field">
+            <span>OpenAI Base URL</span>
+            <input type="text" id="inOpenaiUrl" placeholder="https://api.openai.com/v1" autocomplete="off" />
+          </div>
+          <div class="field">
+            <span>OpenRouter API Key</span>
+            <input type="password" id="inOpenrouterKey" placeholder="Belum di-set" autocomplete="off" />
+          </div>
+          <div class="field">
+            <span>9Router API Key (opsional)</span>
+            <input type="password" id="inNineRouterKey" placeholder="Kosong juga boleh" autocomplete="off" />
+          </div>
+          <div class="field">
+            <span>9Router Base URL</span>
+            <input type="text" id="inNineRouterUrl" placeholder="http://localhost:20128/v1" autocomplete="off" />
+          </div>
+        </section>
+
+        <section class="modal-section">
+          <h4>Dokumen (RAG)</h4>
+          <p class="hint">Letakkan file <code>.txt</code>, <code>.md</code>, atau <code>.csv</code> di folder <code>Chatbot/documents</code>, lalu proses ulang.</p>
+          <label class="switch-row">
+            <span>Baca dokumen saat menjawab</span>
+            <input type="checkbox" id="ragToggle" />
+          </label>
+          <div class="rag-actions">
+            <button class="btn" id="ragReindex">Proses ulang file</button>
+            <span class="rag-status" id="ragStatus"></span>
+          </div>
+          <ul class="rag-files" id="ragFiles"></ul>
+        </section>
+      </div>
+
+      <div class="modal-foot">
+        <button class="btn ghost" id="settingsClose2">Tutup</button>
+        <button class="btn primary" id="settingsSave">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

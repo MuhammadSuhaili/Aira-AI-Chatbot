@@ -1,0 +1,7 @@
+# Jangan commit file berisi API key / data lokal
+backend/config.json
+backend/rag_index.json
+backend/__pycache__/
+*.pyc
+.DS_Store
+deploy/

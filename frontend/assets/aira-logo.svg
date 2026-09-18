@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64">
+  <g transform="translate(6 4)">
+    <path d="M60 4 6 38l22 4z" fill="#2A2352"/>
+    <path d="M28 42 44 58 60 4z" fill="#7C6CFF"/>
+    <path d="M60 4 28 42" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <path d="M12 54h11" stroke="#2A2352" stroke-width="4" stroke-linecap="round" opacity=".3"/>
+    <path d="M19 46h7" stroke="#2A2352" stroke-width="4" stroke-linecap="round" opacity=".18"/>
+  </g>
+  <g fill="#2A2352" font-family="Segoe UI, sans-serif" font-weight="700">
+    <text x="86" y="42" font-size="42" letter-spacing="-1">aira</text>
+  </g>
+</svg>
