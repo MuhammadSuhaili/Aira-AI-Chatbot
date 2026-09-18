@@ -49,6 +49,9 @@ async function refreshHealth() {
   const nCloud = Object.keys(health.providers || {}).length;
   if (health.ok) setStatus(nCloud ? `online · ${nCloud} cloud` : "online", "online");
   else if (health.local === false && nCloud === 0) setStatus("Ollama belum nyala", "offline");
+
+  const fullyConfigured = health.providers.gemini && health.providers.groq;
+  settingsBtn.hidden = !!fullyConfigured;
 }
 
 async function refreshModels() {
