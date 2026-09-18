@@ -1,6 +1,7 @@
 # Deploy Aira ke Vercel (gratis, tanpa kartu)
 
-Backend FastAPI + frontend disajikan lewat satu function ASGI (`api/index.py`).
+Backend FastAPI + frontend disajikan lewat satu function ASGI (`app.py` di root — entrypoint
+FastAPI yang auto-dideteksi runtime Vercel; semua request dirutekan ke sana).
 Key API dibaca dari **Vercel Environment Variables** (bukan `config.json` yang di-ignore).
 `config.json` masih dipakai di lokal; di Vercel file itu tidak bisa ditulis jadi harus pakai env.
 
@@ -23,4 +24,4 @@ Streaming diproses dengan `maxDuration: 60` (limit Hobby).
 - **RAG tidak disarankan di Vercel** — disk ephemeral/read-only, index & dokumen tidak persisten antar instance.
 - Key baru disimpan via env vars, bukan dari settings modal (filesystem read-only). Isi di modal lokal untuk uji lokal.
 - 9Router/Ollama (localhost) tidak relevan di cloud — jangan dipakai.
-- Frontend & `/api/*` semuanya dihandle function; tidak ada file statis terpisah.
+- Semua request (frontend `/` dan `/api/*`) dihandle satu function; `maxDuration` diatur di `vercel.json`.
