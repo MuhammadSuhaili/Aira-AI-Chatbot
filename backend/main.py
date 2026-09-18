@@ -197,6 +197,11 @@ async def models():
     }
 
 
+@app.get("/api/bootstrap")
+async def bootstrap():
+    return {"health": await health(), "models": await models()}
+
+
 @app.get("/api/settings")
 async def get_settings():
     cfg = _load_config()

@@ -39,6 +39,15 @@ function toast(msg) {
   toast._t = setTimeout(() => (toastEl.hidden = true), 2200);
 }
 
+function applyHealth() {
+  const nCloud = Object.keys(health.providers || {}).length;
+  if (health.ok) setStatus(nCloud ? `online · ${nCloud} cloud` : "online", "online");
+  else if (health.local === false && nCloud === 0) setStatus("Ollama belum nyala", "offline");
+
+  const fullyConfigured = health.providers.gemini && health.providers.groq;
+  settingsBtn.hidden = !!fullyConfigured;
+}
+
 async function refreshHealth() {
   try {
     const res = await fetch("/api/health");
@@ -46,12 +55,7 @@ async function refreshHealth() {
   } catch {
     health = { ok: false, local: false, providers: {} };
   }
-  const nCloud = Object.keys(health.providers || {}).length;
-  if (health.ok) setStatus(nCloud ? `online · ${nCloud} cloud` : "online", "online");
-  else if (health.local === false && nCloud === 0) setStatus("Ollama belum nyala", "offline");
-
-  const fullyConfigured = health.providers.gemini && health.providers.groq;
-  settingsBtn.hidden = !!fullyConfigured;
+  applyHealth();
 }
 
 async function refreshModels() {
@@ -480,8 +484,17 @@ document.querySelectorAll(".chip").forEach((c) =>
 
 // ── Init ───────────────────────────────────────────
 async function init() {
-  await refreshHealth();
-  await refreshModels();
+  try {
+    const res = await fetch("/api/bootstrap");
+    const b = await res.json();
+    health = b.health || { ok: false, local: false, providers: {} };
+    modelsData = b.models || modelsData;
+  } catch {
+    await refreshHealth();
+    await refreshModels();
+  }
+  applyHealth();
+  buildModelSelect();
 }
 
 init();
