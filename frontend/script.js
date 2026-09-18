@@ -627,6 +627,11 @@ function renderMarkdown(text) {
       continue;
     }
 
+    if (!line.trim()) {
+      i++;
+      continue;
+    }
+
     const ul = line.match(/^[-*] (.+)$/);
     const ol = line.match(/^\d+\. (.+)$/);
 
@@ -646,6 +651,16 @@ function renderMarkdown(text) {
         list = { type: "ol", open: "<ol>", close: "</ol>", items: [] };
       }
       list.items.push(`<li>${ol[1]}</li>`);
+      i++;
+      continue;
+    }
+
+    if (list && /^\s+/.test(line)) {
+      const t2 = line.trim();
+      if (t2) {
+        const idx = list.items.length - 1;
+        list.items[idx] = list.items[idx].replace(/<\/li>$/, `<p>${t2}</p></li>`);
+      }
       i++;
       continue;
     }
