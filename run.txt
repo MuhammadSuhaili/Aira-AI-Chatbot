@@ -1,4 +1,0 @@
-Chatbot Aira siap dipakai. Yang perlu diingat untuk sesi berikutnya:
-- Ollama biasanya mulai otomatis saat login Windows (ikon di taskbar)
-- Kalau backend mati, jalankan lagi: python main.py di folder Chatbot/backend
-- Buka http://127.0.0.1:8000 untuk chat
