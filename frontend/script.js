@@ -100,6 +100,12 @@ function buildModelSelect() {
   } else {
     sel = { provider: first.dataset.provider, model: first.dataset.model };
   }
+
+  const best = [...modelSelect.options].find((o) => o.dataset.provider === "gemini");
+  if (best) {
+    best.selected = true;
+    sel = { provider: best.dataset.provider, model: best.dataset.model };
+  }
 }
 
 function applySel() {
