@@ -543,7 +543,7 @@ async function send() {
 
 // ── Markdown ───────────────────────────────────────
 function renderMarkdown(text) {
-  const escaped = escapeHtml(text);
+  const escaped = escapeHtml(fixListNumbers(mergeLonelyListNumber(text)));
   const codeBlocks = [];
 
   let out = escaped.replace(/```(\w*)\n([\s\S]*?)```/g, (_, _lang, code) => {
@@ -680,6 +680,38 @@ function escapeHtml(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+// Beberapa model menulis "1. 1. 1. 1." — ratakan jadi 1,2,3,4,5.
+function fixListNumbers(text) {
+  const lines = text.split("\n");
+  const out = [];
+  let pending = null;
+  for (const line of lines) {
+    const m = line.match(/^(\s*)(\d+)([.)])(\s+)(.*)$/);
+    if (m) {
+      const num = Number(m[2]);
+      if (pending && num === pending.num) {
+        pending.count++;
+        out.push(`${m[1]}${pending.count}${m[3]}${m[4]}${m[5]}`);
+        continue;
+      }
+      pending = { num, count: 1 };
+      out.push(line);
+    } else {
+      pending = null;
+      out.push(line);
+    }
+  }
+  return out.join("\n");
+}
+
+// Model kadang menulis "1." lalu isi di baris berikutnya → gabungkan.
+function mergeLonelyListNumber(text) {
+  return text.replace(
+    /^(\s*\d+[.)])[ \t]*\r?\n(?=\s*\S)/gm,
+    "$1 "
+  );
 }
 
 function autoResize() {
