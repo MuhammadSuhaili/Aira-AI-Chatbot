@@ -11,12 +11,19 @@ const toastEl = document.getElementById("toast");
 const ragReindexBtn = document.getElementById("ragReindex");
 const ragStatusEl = document.getElementById("ragStatus");
 const ragFilesEl = document.getElementById("ragFiles");
+const historyBtn = document.getElementById("historyBtn");
+const sessionsEl = document.getElementById("sessions");
+const sessionsOverlay = document.getElementById("sessionsOverlay");
+const sessionListEl = document.getElementById("sessionList");
 
 const history = [];
 let busy = false;
 let health = { ok: false, local: false, providers: {} };
 let modelsData = { local: [], groq: [], gemini: [], openai: [], openrouter: [] };
 let sel = { provider: "local", model: null };
+let sessions = [];
+let activeId = null;
+const SESS_KEY = "aira_sessions";
 
 const PROVS = [
   ["local", "Lokal"],
@@ -235,6 +242,152 @@ settingsModal.addEventListener("click", (e) => {
   if (e.target === settingsModal) closeSettings();
 });
 
+// ── Sessions (riwayat) ─────────────────────────────
+function loadSessions() {
+  try {
+    sessions = JSON.parse(localStorage.getItem(SESS_KEY)) || [];
+  } catch {
+    sessions = [];
+  }
+  sessions = sessions.slice(0, 50);
+}
+
+function persistSessions() {
+  localStorage.setItem(SESS_KEY, JSON.stringify(sessions.slice(0, 50)));
+}
+
+function titleOf(msgs) {
+  const m = msgs.find((x) => x.role === "user");
+  if (!m) return "Tanpa judul";
+  const t = m.content.replace(/\s+/g, " ").trim();
+  return t.length > 40 ? t.slice(0, 40) + "…" : t || "Tanpa judul";
+}
+
+function recentTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  }
+  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+}
+
+function saveCurrent() {
+  if (!history.length) return;
+  if (!activeId) {
+    activeId = "s" + Date.now();
+    sessions.unshift({ id: activeId, title: titleOf(history), messages: [], ts: Date.now() });
+  }
+  const s = sessions.find((x) => x.id === activeId);
+  if (!s) return;
+  s.title = titleOf(history);
+  s.messages = history.slice();
+  s.ts = Date.now();
+  const i = sessions.indexOf(s);
+  if (i > 0) {
+    sessions.splice(i, 1);
+    sessions.unshift(s);
+  }
+  persistSessions();
+  renderSessionList();
+}
+
+function renderSessionList() {
+  sessionListEl.innerHTML = "";
+  if (!sessions.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "Belum ada percakapan.";
+    sessionListEl.appendChild(li);
+    return;
+  }
+  sessions.forEach((s) => {
+    const li = document.createElement("li");
+    li.className = "sess-item" + (s.id === activeId ? " active" : "");
+
+    const main = document.createElement("div");
+    main.className = "sess-main";
+    const title = document.createElement("div");
+    title.className = "sess-title";
+    title.textContent = s.title;
+    const time = document.createElement("div");
+    time.className = "sess-time";
+    time.textContent = recentTime(s.ts);
+    main.appendChild(title);
+    main.appendChild(time);
+
+    const del = document.createElement("button");
+    del.className = "sess-del";
+    del.textContent = "×";
+    del.title = "Hapus percakapan";
+    del.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteSession(s.id);
+    });
+
+    li.addEventListener("click", () => openSession(s.id));
+    li.appendChild(main);
+    li.appendChild(del);
+    sessionListEl.appendChild(li);
+  });
+}
+
+function deleteSession(id) {
+  sessions = sessions.filter((x) => x.id !== id);
+  if (activeId === id) activeId = null;
+  persistSessions();
+  renderSessionList();
+}
+
+function openSession(id) {
+  const s = sessions.find((x) => x.id === id);
+  if (!s) return;
+  activeId = id;
+  history.length = 0;
+  s.messages.forEach((m) => history.push({ role: m.role, content: m.content }));
+  renderChat();
+  closeSessionsPanel();
+}
+
+function newChat() {
+  activeId = null;
+  history.length = 0;
+  chatEl.querySelectorAll(".msg").forEach((n) => n.remove());
+  chatEl.appendChild(welcomeEl);
+  inputEl.value = "";
+  autoResize();
+  scrollBottom();
+  closeSessionsPanel();
+  renderSessionList();
+}
+
+function renderChat() {
+  chatEl.querySelectorAll(".msg").forEach((n) => n.remove());
+  welcomeEl.remove();
+  if (!history.length) {
+    chatEl.appendChild(welcomeEl);
+  } else {
+    history.forEach((m) => addMessage(m.role, m.content));
+  }
+  scrollBottom();
+}
+
+function openSessionsPanel() {
+  renderSessionList();
+  sessionsEl.hidden = false;
+  sessionsOverlay.hidden = false;
+}
+
+function closeSessionsPanel() {
+  sessionsEl.hidden = true;
+  sessionsOverlay.hidden = true;
+}
+
+historyBtn.addEventListener("click", openSessionsPanel);
+document.getElementById("sessionsClose").addEventListener("click", closeSessionsPanel);
+sessionsOverlay.addEventListener("click", closeSessionsPanel);
+document.getElementById("newSession").addEventListener("click", newChat);
+
 // ── Chat ───────────────────────────────────────────
 function addMessage(role, content, isError) {
   welcomeEl?.remove();
@@ -299,6 +452,7 @@ async function send() {
   autoResize();
   addMessage("user", text);
   history.push({ role: "user", content: text });
+  saveCurrent();
   busy = true;
   sendBtn.disabled = true;
   sendBtn.classList.add("loading");
@@ -328,6 +482,21 @@ async function send() {
     const decoder = new TextDecoder();
     let buffer = "";
 
+    const handleEvent = (payload) => {
+      let j;
+      try {
+        j = JSON.parse(payload);
+      } catch {
+        return;
+      }
+      if (j.error) throw new Error(j.error);
+      if (j.message && j.message.content) {
+        reply += j.message.content;
+        bubble.innerHTML = renderMarkdown(reply);
+        scrollBottom();
+      }
+    };
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -337,28 +506,26 @@ async function send() {
       while ((idx = buffer.indexOf("\n\n")) !== -1) {
         const chunk = buffer.slice(0, idx);
         buffer = buffer.slice(idx + 2);
-        if (!chunk.startsWith("data:")) continue;
-        const payload = chunk.slice(5).trim();
-        if (!payload) continue;
+        const line = chunk.trim();
+        if (line.startsWith("data:")) handleEvent(line.slice(5).trim());
+      }
+    }
 
-        let j;
-        try {
-          j = JSON.parse(payload);
-        } catch {
-          continue;
-        }
-
-        if (j.error) throw new Error(j.error);
-        if (j.message && j.message.content) {
-          reply += j.message.content;
-          bubble.innerHTML = renderMarkdown(reply);
-          scrollBottom();
+    const tail = buffer.trim();
+    if (tail) {
+      if (tail.startsWith("data:")) {
+        handleEvent(tail.slice(5).trim());
+      } else {
+        for (const line of tail.split(/[\r\n]+/)) {
+          const l = line.trim();
+          if (l.startsWith("data:")) handleEvent(l.slice(5).trim());
         }
       }
     }
 
     if (!reply) throw new Error("Tidak ada jawaban dari model");
     history.push({ role: "assistant", content: reply });
+    saveCurrent();
   } catch (err) {
     removeTyping();
     addMessage(
@@ -385,6 +552,7 @@ function renderMarkdown(text) {
     return `\u0000CODE${i}\u0000`;
   });
 
+  out = out.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   out = out.replace(/`([^`\n]+)`/g, "<code>$1</code>");
   out = out.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
   out = out.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
@@ -403,10 +571,59 @@ function renderMarkdown(text) {
     }
   };
 
-  for (const line of lines) {
+  const isTableSep = (s) => {
+    if (!s || !s.trim().startsWith("|")) return false;
+    const cells = s.replace(/^\s*\||\|\s*$/g, "").split("|");
+    return cells.every((c) => /^:?-{2,}:?$/.test(c.trim()));
+  };
+
+  const renderTable = (start) => {
+    const headerCells = lines[start]
+      .replace(/^\s*\||\|\s*$/g, "")
+      .split("|")
+      .map((c) => c.trim());
+    const rows = [];
+    let i = start + 2;
+    while (i < lines.length && lines[i].trim().startsWith("|")) {
+      rows.push(
+        lines[i]
+          .replace(/^\s*\||\|\s*$/g, "")
+          .split("|")
+          .map((c) => c.trim())
+      );
+      i++;
+    }
+    const th = headerCells.map((c) => `<th>${c}</th>`).join("");
+    const trs = rows
+      .map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`)
+      .join("");
+    blocks.push(
+      `<div class="table-scroll"><table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>`
+    );
+    return i;
+  };
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
     if (line.startsWith("\u0000CODE")) {
       flushList();
       blocks.push(line);
+      i++;
+      continue;
+    }
+
+    if (isTableSep(lines[i + 1])) {
+      flushList();
+      i = renderTable(i);
+      continue;
+    }
+
+    if (/^---+$/.test(line.trim()) && !line.trim().startsWith("|")) {
+      flushList();
+      blocks.push("<hr>");
+      i++;
       continue;
     }
 
@@ -419,6 +636,7 @@ function renderMarkdown(text) {
         list = { type: "ul", open: "<ul>", close: "</ul>", items: [] };
       }
       list.items.push(`<li>${ul[1]}</li>`);
+      i++;
       continue;
     }
 
@@ -428,26 +646,32 @@ function renderMarkdown(text) {
         list = { type: "ol", open: "<ol>", close: "</ol>", items: [] };
       }
       list.items.push(`<li>${ol[1]}</li>`);
+      i++;
       continue;
     }
 
     flushList();
 
     const t = line.trim();
-    if (!t) continue;
+    if (!t) {
+      i++;
+      continue;
+    }
 
-    if (/^<(h\d|blockquote)/.test(line)) {
+    if (/^<(h\d|blockquote|hr)/.test(line)) {
       blocks.push(line);
+      i++;
       continue;
     }
 
     blocks.push(`<p>${line}</p>`);
+    i++;
   }
   flushList();
 
   return blocks
     .join("\n")
-    .replace(/\u0000CODE(\d+)\u0000/g, (_, i) => codeBlocks[+i]);
+    .replace(/\u0000CODE(\d+)\u0000/g, (_, n) => codeBlocks[+n]);
 }
 
 function escapeHtml(s) {
@@ -490,6 +714,7 @@ document.querySelectorAll(".chip").forEach((c) =>
 
 // ── Init ───────────────────────────────────────────
 async function init() {
+  loadSessions();
   try {
     const res = await fetch("/api/bootstrap");
     const b = await res.json();
@@ -501,6 +726,7 @@ async function init() {
   }
   applyHealth();
   buildModelSelect();
+  if (sessions.length) openSession(sessions[0].id);
 }
 
 init();
