@@ -137,6 +137,7 @@ async function loadSettings() {
     document.getElementById("inOpenaiUrl").value = s.openai_base_url || "";
     document.getElementById("inNineRouterUrl").value = s.nine_router_base_url || "";
     document.getElementById("ragToggle").checked = !!s.rag_enabled;
+    document.getElementById("webToggle").checked = !!s.web_enabled;
     for (const [k, input] of Object.entries(fields)) {
       input.value = "";
       input.placeholder = k === "nine_router_key_set" && !s[k]
@@ -195,6 +196,7 @@ async function saveSettings() {
   const nineUrl = document.getElementById("inNineRouterUrl").value.trim();
   if (nineUrl) payload.nine_router_base_url = nineUrl;
   payload.rag_enabled = document.getElementById("ragToggle").checked;
+  payload.web_enabled = document.getElementById("webToggle").checked;
 
   saveBtnBusy(true);
   try {
@@ -233,11 +235,35 @@ async function reindexRag() {
   }
 }
 
+async function testWebSearch() {
+  const btn = document.getElementById("webTest");
+  const st = document.getElementById("webStatus");
+  btn.disabled = true;
+  st.textContent = "Mencari…";
+  try {
+    const res = await fetch("/api/web/search?q=" + encodeURIComponent("presiden Indonesia saat ini"));
+    if (!res.ok) throw new Error("gagal");
+    const data = await res.json();
+    const n = (data.results || []).length;
+    const top = data.results?.[0];
+    st.textContent = n
+      ? `${n} hasil · ${top.title}`
+      : "Tidak ada hasil (internet offline?)";
+    toast(n ? "Pencarian web OK ✓" : "Pencarian web gagal / offline");
+  } catch (e) {
+    st.textContent = "Gagal mencari";
+    toast("Gagal mencari: " + (e.message || ""));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 settingsBtn.addEventListener("click", openSettings);
 document.getElementById("settingsClose").addEventListener("click", closeSettings);
 document.getElementById("settingsClose2").addEventListener("click", closeSettings);
 document.getElementById("settingsSave").addEventListener("click", saveSettings);
 document.getElementById("ragReindex").addEventListener("click", reindexRag);
+document.getElementById("webTest").addEventListener("click", testWebSearch);
 settingsModal.addEventListener("click", (e) => {
   if (e.target === settingsModal) closeSettings();
 });

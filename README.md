@@ -77,6 +77,15 @@ Setelah key disimpan, model cloud muncul di dropdown (dikelompokkan per provider
 
 File diproses sekali (di-cache lewat hash) — pemrosesan ulang hanya membaca file yang berubah. Tanpa Ollama berjalan, pemrosesan/pencarian dokumen tidak bisa dilakukan.
 
+## Pencarian Web — Info Terkini
+
+Model (terutama yang kecil/lokal) punya batas pengetahuan lama — contoh: jawab "Jokowi" untuk presiden Indonesia padahal sekarang sudah Prabowo Subianto. Untuk info terbaru tanpa mengganti model:
+
+1. Buka **Pengaturan** → nyalakan *Cari info terbaru dari web saat menjawab* → **Simpan**.
+2. Saat kamu bertanya, Aira mencari di DuckDuckGo + Wikipedia (tanpa API key) dan menyuntikkan hasilnya sebagai referensi ke model.
+
+Gunakan tombol **Uji pencarian** di Pengaturan untuk memastikan internet/jaringan bekerja. Model cloud modern (Gemini/Groq) biasanya sudah punya pengetahuan lebih baru dan tidak perlu fitur ini.
+
 ## Tips
 
 - Ganti kepribadian/bahasa Aira dengan mengedit `backend/aira_prompt.txt`

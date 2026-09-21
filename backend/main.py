@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import date
 from pathlib import Path
 
 import httpx
@@ -11,6 +12,7 @@ from pydantic import BaseModel
 
 import providers
 import rag
+import search as web_search
 
 OLLAMA_URL = "http://localhost:11434"
 BASE_DIR = Path(__file__).resolve().parent
@@ -29,6 +31,7 @@ _DEFAULT_CONFIG = {
     "nine_router_api_key": "",
     "nine_router_base_url": "http://localhost:20128/v1",
     "rag_enabled": False,
+    "web_enabled": False,
 }
 
 providers.set_prompt_file(PROMPT_FILE)
@@ -54,6 +57,7 @@ _ENV_MAP = {
     "nine_router_api_key": "NINE_ROUTER_API_KEY",
     "nine_router_base_url": "NINE_ROUTER_BASE_URL",
     "rag_enabled": "RAG_ENABLED",
+    "web_enabled": "WEB_ENABLED",
 }
 
 
@@ -214,6 +218,7 @@ async def get_settings():
         "nine_router_key_set": bool(cfg["nine_router_api_key"]),
         "nine_router_base_url": cfg["nine_router_base_url"],
         "rag_enabled": bool(cfg["rag_enabled"]),
+        "web_enabled": bool(cfg["web_enabled"]),
     }
 
 
@@ -235,6 +240,8 @@ async def post_settings(body: dict):
         cfg["nine_router_base_url"] = str(body["nine_router_base_url"]).strip().rstrip("/")
     if isinstance(body.get("rag_enabled"), bool):
         cfg["rag_enabled"] = body["rag_enabled"]
+    if isinstance(body.get("web_enabled"), bool):
+        cfg["web_enabled"] = body["web_enabled"]
     _save_config(cfg)
 
     rag._state["enabled"] = cfg["rag_enabled"]
@@ -257,6 +264,13 @@ async def rag_reindex():
     return result
 
 
+@app.get("/api/web/search")
+async def web_search_endpoint(q: str = ""):
+    if not q.strip():
+        return {"results": [], "error": "Parameter q kosong"}
+    return {"results": await web_search.search(q.strip())}
+
+
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
     if not req.messages:
@@ -270,11 +284,12 @@ async def chat(req: ChatRequest):
         m.model_dump() for m in req.messages
     ]
 
+    last_user = next(
+        (m["content"] for m in reversed(msg_list) if m["role"] == "user"), ""
+    )
+
     # RAG — sisipkan konteks dokumen terbaru jika aktif & relevan
     if cfg.get("rag_enabled"):
-        last_user = next(
-            (m["content"] for m in reversed(msg_list) if m["role"] == "user"), ""
-        )
         ctx = await rag.context(last_user)
         if ctx:
             msg_list.insert(
@@ -283,6 +298,22 @@ async def chat(req: ChatRequest):
                     "role": "system",
                     "content": "Gunakan konteks dokumen pengguna berikut sebagai rujukan "
                     "utama jika relevan dengan pertanyaan:\n\n" + ctx,
+                },
+            )
+
+    # Web search — sisipkan info terkini dari internet jika aktif
+    if cfg.get("web_enabled"):
+        ctx = await web_search.context(last_user)
+        if ctx:
+            today = date.today().strftime("%d %B %Y")
+            msg_list.insert(
+                len(msg_list) - 1,
+                {
+                    "role": "system",
+                    "content": f"HARI INI TANGGAL {today}. Berikut hasil pencarian internet "
+                    "terbaru untuk pertanyaan pengguna. Fakta ini BISA LEBIH BARU daripada "
+                    "hafalanmu yang mungkin sudah usang — jika berbeda, PRIORITASKAN fakta "
+                    "pencarian internet ini. Sebutkan sumbernya bila relevan:\n\n" + ctx,
                 },
             )
 
